@@ -1,23 +1,39 @@
 import confetti from "canvas-confetti";
 
 let issuesInDone = 0;
+let searchParameters = "";
+
+const getSearchParameters = () => {
+  const searchParameters = new URLSearchParams(location.search);
+  return JSON.stringify([
+    ...searchParameters.getAll("quickFilter"),
+    ...searchParameters.getAll("search"),
+  ]);
+};
+
+const getIssuesInDone = (id: string) =>
+  window.document.evaluate(
+    `count(//*[@data-column-id=${id}]//*[@data-issue-id])`,
+    document
+  ).numberValue;
 
 const doneCheck =
   (doneColumnId: string): MutationCallback =>
-  (mutationRecord) => {
-    console.log("change detected", mutationRecord);
-    const newIssuesInDone = window.document.evaluate(
-      `count(//*[@data-column-id=${doneColumnId}]//*[@data-issue-id])`,
-      document
-    ).numberValue;
-    if (issuesInDone !== newIssuesInDone) {
-      issuesInDone = newIssuesInDone;
+  () => {
+    const newIssuesInDone = getIssuesInDone(doneColumnId);
+    if (searchParameters !== getSearchParameters()) {
+      console.log("Search parameters change");
+      searchParameters = getSearchParameters();
+    } else if (issuesInDone < newIssuesInDone) {
+      console.log("Done column changed", issuesInDone, newIssuesInDone);
       confetti({
-        particleCount: 100,
-        spread: 70,
+        particleCount: 1000,
+        spread: 360,
         origin: { y: 0.6 },
+        zIndex: 9999,
       });
     }
+    issuesInDone = newIssuesInDone;
   };
 
 const timeoutFunction = () => {
@@ -29,10 +45,8 @@ const timeoutFunction = () => {
     .iterateNext();
 
   if (columnLi && columnLi.nodeValue) {
-    issuesInDone = window.document.evaluate(
-      `count(//*[@data-column-id=${columnLi.nodeValue}]//*[@data-issue-id])`,
-      document
-    ).numberValue;
+    issuesInDone = getIssuesInDone(columnLi.nodeValue);
+    searchParameters = getSearchParameters();
     const observer = new MutationObserver(doneCheck(columnLi.nodeValue));
     observer.observe(document.body, {
       subtree: true,
