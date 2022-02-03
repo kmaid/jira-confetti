@@ -115,7 +115,7 @@ const loadConfetti = () => {
     console.log(`Issues in done: ${issuesInDone}`);
   } else {
     console.log("Page not ready... retrying");
-    setTimeout(loadConfetti, 1000); // Poll until we
+    setTimeout(loadConfetti, 1000); // Poll until can load. Or not. See if i care :D
   }
 };
 
