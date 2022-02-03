@@ -5,31 +5,20 @@
   "description": "Chrome Extension, TypeScript, Visual Studio Code",
   "version": "1.0",
 
-  "options_ui": {
-    "page": "options.html"
-  },
-
   "action": {
     "default_icon": "icon.png",
     "default_popup": "popup.html"
   },
 
   "content_scripts": [
-      {
-          "matches": ["<all_urls>"],
-          "js": ["js/vendor.js", "js/content_script.js"]
-      }
+    {
+      "matches": ["https://*.atlassian.net/jira/*/boards/*"],
+      "js": ["js/vendor.js", "js/content_script.js"],
+      "run_at": "document_end"
+    }
   ],
 
-  "background": {
-    "service_worker": "js/background.js"
-  },
+  "permissions": ["storage"],
 
-  "permissions": [
-    "storage"
-  ],
-
-  "host_permissions": [
-    "<all_urls>"
-  ]
+  "host_permissions": ["https://*.atlassian.net/jira/*/boards/*"]
 }
