@@ -11,11 +11,22 @@ const getSearchParameters = () => {
   ]);
 };
 
-const getIssuesInDone = (id: string) =>
-  window.document.evaluate(
-    `count(//*[@data-column-id=${id}]//*[@data-issue-id])`,
-    document
-  ).numberValue;
+const getIssuesInDone = () => {
+  // This doesn't work on my own free board. I am not sure why our prod jira has these attributes.
+  const columnLi = window.document
+    .evaluate(
+      "//*[@data-tooltip='Done']/ancestor::li[@data-id]/@data-id",
+      document
+    )
+    .iterateNext();
+  if (columnLi && columnLi.nodeValue) {
+    return window.document.evaluate(
+      `count(//*[@data-column-id=${columnLi.nodeValue}]//*[@data-issue-id])`,
+      document
+    ).numberValue;
+  }
+  return null;
+};
 
 const fireRandomConfetti = () => {
   const duration = 2 * 1000;
@@ -44,19 +55,18 @@ const fireRandomConfetti = () => {
     })();
   };
   const b = () => {
-    const defaults = {
+    const defaults: Partial<Parameters<typeof confetti>[0]> = {
       startVelocity: 30,
       spread: 360,
       ticks: 60,
       zIndex,
     };
 
-    const randomInRange = (min: number, max: number) => {
-      return Math.random() * (max - min) + min;
-    };
+    const randomInRange = (min: number, max: number) =>
+      Math.random() * (max - min) + min;
 
     const interval: NodeJS.Timeout = setInterval(() => {
-      var timeLeft = end - Date.now();
+      const timeLeft = end - Date.now();
 
       if (timeLeft <= 0) {
         return clearInterval(interval);
@@ -81,10 +91,9 @@ const fireRandomConfetti = () => {
   firingOption && firingOption();
 };
 
-const doneCheck =
-  (doneColumnId: string): MutationCallback =>
-  () => {
-    const newIssuesInDone = getIssuesInDone(doneColumnId);
+const doneCheck: MutationCallback = () => {
+  const newIssuesInDone = getIssuesInDone();
+  if (newIssuesInDone) {
     if (searchParameters !== getSearchParameters()) {
       console.log("Search parameters change");
       searchParameters = getSearchParameters();
@@ -93,25 +102,21 @@ const doneCheck =
       fireRandomConfetti();
     }
     issuesInDone = newIssuesInDone;
-  };
+  } else {
+    console.log("Could not find done column ID");
+  }
+};
 
 const loadConfetti = () => {
-  const columnLi = window.document
-    .evaluate(
-      "//*[@data-tooltip='Done']/ancestor::li[@data-id]/@data-id",
-      document
-    )
-    .iterateNext();
-
-  if (columnLi && columnLi.nodeValue) {
-    issuesInDone = getIssuesInDone(columnLi.nodeValue);
+  const newIssuesInDone = getIssuesInDone();
+  if (newIssuesInDone) {
+    issuesInDone = newIssuesInDone;
     searchParameters = getSearchParameters();
-    const observer = new MutationObserver(doneCheck(columnLi.nodeValue));
+    const observer = new MutationObserver(doneCheck);
     observer.observe(document.body, {
       subtree: true,
       childList: true,
     });
-
     console.log(`Issues in done: ${issuesInDone}`);
   } else {
     console.log("Page not ready... retrying");
