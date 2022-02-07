@@ -25,7 +25,9 @@ npm run build
 
 ## Load extension to chrome
 
-Load `dist` directory
+https://www.youtube.com/watch?v=oswjtLwCUqg
+
+Load `dist` directory after build
 
 ## Test
 
